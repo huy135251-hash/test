@@ -1,0 +1,591 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#167447">
+<title>Bảng tính Mini</title>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  color: #202124;
+}
+
+header {
+  background: #167447;
+  color: white;
+  padding: 16px;
+}
+
+header h2 {
+  margin: 0 0 6px;
+  font-size: 21px;
+}
+
+header p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.toolbar {
+  padding: 12px;
+  background: white;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+button {
+  border: 0;
+  border-radius: 7px;
+  padding: 10px 12px;
+  background: #167447;
+  color: white;
+  font-size: 14px;
+}
+
+button.secondary {
+  background: #e8f0eb;
+  color: #167447;
+}
+
+.formula-box {
+  padding: 10px;
+  background: white;
+  border-top: 1px solid #ddd;
+}
+
+.formula-box label {
+  font-size: 12px;
+  color: #666;
+}
+
+.formula-row {
+  display: flex;
+  gap: 7px;
+  margin-top: 7px;
+}
+
+#cellName {
+  width: 55px;
+  text-align: center;
+  background: #edf1ee;
+}
+
+#formula {
+  flex: 1;
+  min-width: 0;
+}
+
+.formula-row input {
+  padding: 10px;
+  border: 1px solid #cbd5ce;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+.sheet {
+  overflow: auto;
+  background: white;
+  height: calc(100dvh - 245px);
+  min-height: 250px;
+  -webkit-overflow-scrolling: touch;
+}
+
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  width: max-content;
+  min-width: 100%;
+}
+
+th, td {
+  border-right: 1px solid #d5d9d6;
+  border-bottom: 1px solid #d5d9d6;
+  height: 42px;
+  min-width: 105px;
+  padding: 0;
+}
+
+th {
+  background: #e9efeb;
+  text-align: center;
+  font-size: 13px;
+  font-weight: bold;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  min-width: 105px;
+}
+
+th:first-child {
+  min-width: 42px;
+  width: 42px;
+  left: 0;
+  z-index: 4;
+}
+
+.row-number {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  width: 42px;
+  min-width: 42px;
+  text-align: center;
+  background: #edf1ee;
+  font-size: 12px;
+}
+
+.cell {
+  width: 100%;
+  height: 41px;
+  border: 2px solid transparent;
+  padding: 8px;
+  font-size: 15px;
+  background: transparent;
+  outline: none;
+  color: #202124;
+  border-radius: 0;
+}
+
+td.selected {
+  outline: 2px solid #167447;
+  outline-offset: -2px;
+}
+
+td.selected .cell {
+  background: #f1faf4;
+}
+
+.status {
+  background: white;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: #555;
+  border-top: 1px solid #ddd;
+}
+
+.help {
+  margin: 12px;
+  padding: 12px;
+  background: #eaf5ee;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+@media (max-width: 600px) {
+  header { padding: 13px; }
+  .toolbar { gap: 6px; padding: 9px; }
+  button { padding: 10px; }
+  th, td { min-width: 100px; }
+  th:first-child, .row-number {
+    min-width: 38px;
+    width: 38px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h2>📊 Bảng tính Mini</h2>
+  <p>Bảng tính thông minh trên iPhone</p>
+</header>
+
+<div class="toolbar">
+  <button onclick="newSheet()">＋ Bảng mới</button>
+  <button class="secondary" onclick="addRow()">＋ Hàng</button>
+  <button class="secondary" onclick="addColumn()">＋ Cột</button>
+  <button class="secondary" onclick="exportCSV()">Tải CSV</button>
+  <button class="secondary" onclick="clearSelected()">Xóa ô</button>
+</div>
+
+<div class="formula-box">
+  <label>Ô đang chọn / Công thức</label>
+  <div class="formula-row">
+    <input id="cellName" value="A1" readonly>
+    <input id="formula" placeholder="Nhập dữ liệu hoặc =A1+B1">
+    <button onclick="applyFormula()">✓</button>
+  </div>
+</div>
+
+<div class="sheet">
+  <table id="grid"></table>
+</div>
+
+<div class="status" id="status">
+  Đã sẵn sàng · Dữ liệu tự lưu trên thiết bị
+</div>
+
+<div class="help">
+  <b>Cách sử dụng</b><br>
+  • Chạm vào một ô để nhập dữ liệu.<br>
+  • Nhập <b>=A1+B1</b> để cộng hai ô.<br>
+  • Nhập <b>=A1*B1</b> để nhân hai ô.<br>
+  • Nhập <b>=SUM(A1:A5)</b> để tính tổng.<br>
+  • Dữ liệu được tự lưu trên trình duyệt này.
+</div>
+
+<script>
+const STORAGE_KEY = "mini_spreadsheet_v1";
+
+let rows = 20;
+let cols = 8;
+let data = {};
+let selected = "A1";
+let busy = false;
+
+const grid = document.getElementById("grid");
+const formulaInput = document.getElementById("formula");
+const cellName = document.getElementById("cellName");
+const statusBox = document.getElementById("status");
+
+function colName(n) {
+  let result = "";
+  while (n > 0) {
+    n--;
+    result = String.fromCharCode(65 + n % 26) + result;
+    n = Math.floor(n / 26);
+  }
+  return result;
+}
+
+function colNumber(name) {
+  let n = 0;
+  for (const c of name) {
+    n = n * 26 + c.charCodeAt(0) - 64;
+  }
+  return n;
+}
+
+function saveData() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      rows, cols, data
+    }));
+    statusBox.textContent = "✓ Đã lưu dữ liệu trên thiết bị";
+  } catch (e) {
+    statusBox.textContent = "Không thể lưu dữ liệu trên thiết bị";
+  }
+}
+
+function loadData() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (saved && saved.data) {
+      rows = Math.max(1, Math.min(500, saved.rows || 20));
+      cols = Math.max(1, Math.min(50, saved.cols || 8));
+      data = saved.data;
+    }
+  } catch (e) {
+    data = {};
+  }
+}
+
+function render() {
+  grid.innerHTML = "";
+
+  const thead = document.createElement("thead");
+  const hr = document.createElement("tr");
+  const corner = document.createElement("th");
+  corner.textContent = "#";
+  hr.appendChild(corner);
+
+  for (let c = 1; c <= cols; c++) {
+    const th = document.createElement("th");
+    th.textContent = colName(c);
+    hr.appendChild(th);
+  }
+
+  thead.appendChild(hr);
+  grid.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+
+  for (let r = 1; r <= rows; r++) {
+    const tr = document.createElement("tr");
+    const number = document.createElement("th");
+    number.className = "row-number";
+    number.textContent = r;
+    tr.appendChild(number);
+
+    for (let c = 1; c <= cols; c++) {
+      const address = colName(c) + r;
+      const td = document.createElement("td");
+      const input = document.createElement("input");
+
+      input.className = "cell";
+      input.id = "cell-" + address;
+      input.autocomplete = "off";
+      input.setAttribute("aria-label", address);
+      input.value = displayValue(address);
+
+      td.dataset.address = address;
+      if (address === selected) td.classList.add("selected");
+
+      input.addEventListener("focus", () => selectCell(address));
+      input.addEventListener("change", () => {
+        data[address] = input.value;
+        recalculate();
+        saveData();
+      });
+
+      input.addEventListener("keydown", e => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          applyFormula();
+          const next = colName(c) + Math.min(rows, r + 1);
+          document.getElementById("cell-" + next)?.focus();
+        }
+      });
+
+      td.appendChild(input);
+      tr.appendChild(td);
+    }
+
+    tbody.appendChild(tr);
+  }
+
+  grid.appendChild(tbody);
+  updateFormulaBar();
+}
+
+function selectCell(address) {
+  selected = address;
+
+  grid.querySelectorAll("td.selected").forEach(td =>
+    td.classList.remove("selected")
+  );
+
+  grid.querySelector(`[data-address="${address}"]`)
+    ?.classList.add("selected");
+
+  updateFormulaBar();
+}
+
+function updateFormulaBar() {
+  cellName.value = selected;
+  formulaInput.value = data[selected] ?? "";
+}
+
+function tokenize(expression) {
+  const tokens = [];
+  const re = /\s*(\d+(?:\.\d+)?|[A-Z]+[1-9]\d*|SUM|[()+\-*/:,])\s*/gy;
+  let pos = 0;
+  const source = expression.toUpperCase();
+
+  while (pos < source.length) {
+    re.lastIndex = pos;
+    const match = re.exec(source);
+    if (!match) throw Error("Công thức không hợp lệ");
+    tokens.push(match[1]);
+    pos = re.lastIndex;
+  }
+
+  return tokens;
+}
+
+function evaluate(expression, stack = []) {
+  const tokens = tokenize(expression);
+  let i = 0;
+
+  function primary() {
+    const token = tokens[i++];
+
+    if (token === "+" || token === "-") {
+      const value = primary();
+      return token === "-" ? -value : value;
+    }
+
+    if (token === "(") {
+      const value = addSub();
+      if (tokens[i++] !== ")") throw Error("Thiếu dấu )");
+      return value;
+    }
+
+    if (token === "SUM") {
+      if (tokens[i++] !== "(") throw Error("SUM cần dấu (");
+      let total = 0;
+
+      while (true) {
+        const start = tokens[i];
+
+        if (!/^[A-Z]+[1-9]\d*$/.test(start || "")) {
+          throw Error("SUM cần địa chỉ ô");
+        }
+
+        i++;
+        const end = tokens[i] === ":" ? (i++, tokens[i++]) : start;
+
+        if (!/^[A-Z]+[1-9]\d*$/.test(end || "")) {
+          throw Error("Vùng ô không hợp lệ");
+        }
+
+        const m1 = start.match(/^([A-Z]+)(\d+)$/);
+        const m2 = end.match(/^([A-Z]+)(\d+)$/);
+        const c1 = colNumber(m1[1]);
+        const c2 = colNumber(m2[1]);
+        const r1 = Number(m1[2]);
+        const r2 = Number(m2[2]);
+
+        for (let r = Math.min(r1, r2); r <= Math.max(r1, r2); r++) {
+          for (let c = Math.min(c1, c2); c <= Math.max(c1, c2); c++) {
+            const v = resolve(colName(c) + r, stack);
+            total += Number(v) || 0;
+          }
+        }
+
+        if (tokens[i] === ")") {
+          i++;
+          break;
+        }
+        if (tokens[i++] !== ",") throw Error("Thiếu dấu phẩy");
+      }
+      return total;
+    }
+
+    if (/^\d/.test(token || "")) return Number(token);
+
+    if (/^[A-Z]+[1-9]\d*$/.test(token || "")) {
+      return Number(resolve(token, stack)) || 0;
+    }
+
+    throw Error("Không hiểu công thức");
+  }
+
+  function mulDiv() {
+    let value = primary();
+    while (tokens[i] === "*" || tokens[i] === "/") {
+      const op = tokens[i++];
+      const right = primary();
+      if (op === "/" && right === 0) throw Error("Chia cho 0");
+      value = op === "*" ? value * right : value / right;
+    }
+    return value;
+  }
+
+  function addSub() {
+    let value = mulDiv();
+    while (tokens[i] === "+" || tokens[i] === "-") {
+      const op = tokens[i++];
+      const right = mulDiv();
+      value = op === "+" ? value + right : value - right;
+    }
+    return value;
+  }
+
+  const result = addSub();
+  if (i !== tokens.length) throw Error("Công thức không hợp lệ");
+  if (!Number.isFinite(result)) throw Error("Kết quả không hợp lệ");
+  return result;
+}
+
+function resolve(address, stack = []) {
+  if (stack.includes(address)) throw Error("Phát hiện công thức vòng lặp");
+
+  const raw = String(data[address] ?? "");
+  if (!raw.startsWith("=")) return raw;
+
+  return evaluate(raw.slice(1), [...stack, address]);
+}
+
+function displayValue(address) {
+  try {
+    const value = resolve(address);
+    if (typeof value === "number") {
+      return Number(value.toFixed(8)).toLocaleString("vi-VN");
+    }
+    return value;
+  } catch (e) {
+    return "#LỖI";
+  }
+}
+
+function recalculate() {
+  grid.querySelectorAll(".cell").forEach(input => {
+    input.value = displayValue(input.id.slice(5));
+  });
+  updateFormulaBar();
+}
+
+function applyFormula() {
+  data[selected] = formulaInput.value;
+  recalculate();
+  saveData();
+
+  document.getElementById("cell-" + selected)?.focus();
+}
+
+function addRow() {
+  if (rows >= 500) return alert("Đã đạt giới hạn 500 hàng");
+  rows++;
+  render();
+  saveData();
+}
+
+function addColumn() {
+  if (cols >= 50) return alert("Đã đạt giới hạn 50 cột");
+  cols++;
+  render();
+  saveData();
+}
+
+function clearSelected() {
+  delete data[selected];
+  recalculate();
+  saveData();
+  document.getElementById("cell-" + selected)?.focus();
+}
+
+function newSheet() {
+  if (!confirm("Tạo bảng mới và xóa dữ liệu bảng hiện tại?")) return;
+  data = {};
+  rows = 20;
+  cols = 8;
+  selected = "A1";
+  render();
+  saveData();
+}
+
+function exportCSV() {
+  const lines = [];
+
+  for (let r = 1; r <= rows; r++) {
+    const line = [];
+
+    for (let c = 1; c <= cols; c++) {
+      const value = String(displayValue(colName(c) + r));
+      line.push('"' + value.replace(/"/g, '""') + '"');
+    }
+
+    lines.push(line.join(","));
+  }
+
+  const blob = new Blob(
+    ["\uFEFF" + lines.join("\r\n")],
+    { type: "text/csv;charset=utf-8;" }
+  );
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "bang-tinh.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+loadData();
+render();
+</script>
+
+</body>
+</html>
