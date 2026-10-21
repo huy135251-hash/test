@@ -1,0 +1,186 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">   
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Việc cần làm">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+    <title>Việc cần làm</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #eef2ff;
+            margin: 0;
+            padding: 25px 15px;
+        }
+
+        .app {
+            max-width: 400px;
+            margin: 30px auto;
+            background: white;
+            padding: 22px;
+            border-radius: 20px;
+            box-shadow: 0 5px 20px #0001;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4f46e5;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 8px;
+        }
+
+        input {
+            width: 100%;
+            min-width: 0;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: #4f46e5;
+            color: white;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        ul {
+            padding: 0;
+            list-style: none;
+        }
+
+        li {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            padding: 12px;
+            background: #f3f4f6;
+            border-radius: 8px;
+            overflow-wrap: anywhere;
+        }
+
+        li span {
+            flex: 1;
+        }
+
+        li.done span {
+            text-decoration: line-through;
+            color: gray;
+        }
+
+        li button {
+            padding: 8px;
+            background: #ef4444;
+        }
+
+        .note {
+            text-align: center;
+            color: #666;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <h1>📝 Việc cần làm</h1>
+
+        <div class="input-area">
+            <input id="taskInput"
+                   placeholder="Nhập công việc...">
+            <button onclick="addTask()">Thêm</button>
+        </div>
+
+        <ul id="taskList"></ul>
+
+        <p class="note">
+            Bấm vào công việc để đánh dấu hoàn thành.
+        </p>
+    </div>
+
+    <script>
+        let tasks = JSON.parse(
+            localStorage.getItem("tasks") || "[]"
+        );
+
+        function saveTasks() {
+            localStorage.setItem(
+                "tasks", JSON.stringify(tasks)
+            );
+        }
+
+        function renderTasks() {
+            const list = document.getElementById("taskList");
+            list.innerHTML = "";
+
+            tasks.forEach((task, index) => {
+                const li = document.createElement("li");
+
+                if (task.done) {
+                    li.classList.add("done");
+                }
+
+                const name = document.createElement("span");
+                name.textContent = task.name;
+
+                name.onclick = () => {
+                    tasks[index].done = !tasks[index].done;
+                    saveTasks();
+                    renderTasks();
+                };
+
+                const del = document.createElement("button");
+                del.textContent = "Xóa";
+
+                del.onclick = () => {
+                    tasks.splice(index, 1);
+                    saveTasks();
+                    renderTasks();
+                };
+
+                li.append(name, del);
+                list.appendChild(li);
+            });
+        }
+
+        function addTask() {
+            const input = document.getElementById("taskInput");
+            const name = input.value.trim();
+
+            if (name === "") {
+                alert("Bạn hãy nhập công việc!");
+                return;
+            }
+
+            tasks.push({ name: name, done: false });
+            saveTasks();
+            renderTasks();
+            input.value = "";
+            input.focus();
+        }
+
+        document.getElementById("taskInput")
+            .addEventListener("keydown", event => {
+                if (event.key === "Enter") {
+                    addTask();
+                }
+            });
+
+        renderTasks();
+    </script>
+</body>
+</html>
