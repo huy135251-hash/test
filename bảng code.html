@@ -1,0 +1,119 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bảng tính bán hàng</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+  }
+
+  h2 { color: #16834a; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th, td {
+    border: 1px solid #ccc;
+    padding: 10px;
+    text-align: left;
+  }
+
+  th {
+    background: #16834a;
+    color: white;
+  }
+
+  input {
+    width: 90%;
+    padding: 6px;
+    border: 1px solid #ddd;
+  }
+
+  .total {
+    margin-top: 20px;
+    font-weight: bold;
+    font-size: 18px;
+  }
+</style>
+</head>
+<body>
+
+<h2>Bảng tính bán hàng</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Mặt hàng</th>
+      <th>Số lượng</th>
+      <th>Đơn giá</th>
+      <th>Thành tiền</th>
+    </tr>
+  </thead>
+  <tbody id="products">
+    <tr>
+      <td><input value="Áo"></td>
+      <td><input type="number" value="2" min="0" oninput="calculate()"></td>
+      <td><input type="number" value="100000" min="0" oninput="calculate()"></td>
+      <td class="amount">0</td>
+    </tr>
+    <tr>
+      <td><input value="Quần"></td>
+      <td><input type="number" value="1" min="0" oninput="calculate()"></td>
+      <td><input type="number" value="150000" min="0" oninput="calculate()"></td>
+      <td class="amount">0</td>
+    </tr>
+  </tbody>
+</table>
+
+<p class="total">
+  Tổng doanh thu: <span id="total">0</span> VNĐ
+</p>
+
+<button onclick="addRow()">Thêm mặt hàng</button>
+
+<script>
+function calculate() {
+  const rows = document.querySelectorAll("#products tr");
+  let total = 0;
+
+  rows.forEach(row => {
+    const inputs = row.querySelectorAll("input");
+    const quantity = Math.max(0, Number(inputs[1].value) || 0);
+    const price = Math.max(0, Number(inputs[2].value) || 0);
+    const amount = quantity * price;
+
+    row.querySelector(".amount").textContent =
+      amount.toLocaleString("vi-VN");
+
+    total += amount;
+  });
+
+  document.getElementById("total").textContent =
+    total.toLocaleString("vi-VN");
+}
+
+function addRow() {
+  const row = document.createElement("tr");
+
+  row.innerHTML = `
+    <td><input placeholder="Tên hàng"></td>
+    <td><input type="number" value="0" min="0" oninput="calculate()"></td>
+    <td><input type="number" value="0" min="0" oninput="calculate()"></td>
+    <td class="amount">0</td>
+  `;
+
+  document.getElementById("products").appendChild(row);
+  calculate();
+}
+
+calculate();
+</script>
+
+</body>
+</html>
